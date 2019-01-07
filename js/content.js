@@ -24,10 +24,6 @@
     }
   }
 
-  function addScopePrefix (sel, prefix) {
-    return sel.replace(/([.#])([^.#]+)/g, `$1${prefix}$2`)
-  }
-
   class JustNowChecker {
     constructor () {
       this.lastState = null
@@ -141,10 +137,16 @@
       this._injectContent(this._makeContentScoped(resHtml))
     }
 
+    addScopePrefix (sel) {
+      const prefix = this.scopePrefix
+      return sel.replace(/([.#])([^.#]+)/g, `$1${prefix}$2`)
+    }
+
     _buildViewTemplate (id, res) {
+      const that = this
       return {
         pureId: id,
-        id: addScopePrefix('#' + id, this.scopePrefix),
+        id: that.addScopePrefix('#' + id),
         template: this._makeContentScoped(`
 <div id="${id}" v-bind:class="{'@@hidden':!show}"
     v-bind:style="{left:left+'px', top:top+'px'}">${res}
@@ -171,12 +173,13 @@
     }
 
     _makeStyleScoped (css) {
+      const that = this
       function addPrefix (sel) {
         return sel.split(',').map(
-          x => addScopePrefix(x, prefix)).join(',')
+          that.addScopePrefix.bind(that)
+        ).join(',')
       }
 
-      const prefix = this.scopePrefix
       return css.replace(/([^{]+)\{([^}]+)\}/g, ($0, $1, $2) => {
         return addPrefix($1) + '{' + this.addImportant($2) + '\n}'
       })
