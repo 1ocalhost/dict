@@ -1,8 +1,23 @@
-/* global DOMParser XMLHttpRequest MouseEvent Vue */
+/* global chrome DOMParser XMLHttpRequest MouseEvent Vue */
 (() => {
   'use strict'
   const kScopePrefix = 'mmJsOrg-'
   const kIsDebug = true
+
+  function loadRes (path) {
+    return new Promise(function (resolve, reject) {
+      var xhttp = new XMLHttpRequest()
+      xhttp.onreadystatechange = onEnd.bind(xhttp, ...arguments)
+      xhttp.open('GET', chrome.runtime.getURL(path), true)
+      xhttp.send()
+    })
+
+    function onEnd (yes, no) {
+      if (this.readyState === 4) {
+        this.status === 200 ? yes(this.responseText) : no()
+      }
+    }
+  }
 
   function _log (x) {
     if (kIsDebug) {
@@ -100,22 +115,48 @@
   }
 
   class DictRes {
-    inject () {
-      const prefix = kScopePrefix
-      let css = this.makeStyleScoped(this.styleRes(), prefix)
-      let html = this.makeContentScoped(this.contentRes(), prefix)
-      this.injectStyle(css)
-      this.injectContent(html)
+    async load () {
+      const resStyle = await loadRes('css/index.css')
+      const resHtmlLookupBtn = await loadRes('html/lookup_btn.html')
+      const resHtmlSelectBoard = await loadRes('html/select_board.html')
+      const resHtmlWordMeaning = await loadRes('html/word_meaning.html')
+
+      this.lookupBtn = this._buildViewTemplate('lookupBtn', resHtmlLookupBtn)
+      this.selectBoard = this._buildViewTemplate('selectBoard', resHtmlSelectBoard)
+      this.wordMeaning = this._buildViewTemplate('wordMeaning', resHtmlWordMeaning)
+      this._inject(resStyle)
     }
 
-    injectStyle (css) {
+    _inject (resStyle) {
+      const resHtml = [
+        this.lookupBtn,
+        this.selectBoard,
+        this.wordMeaning
+      ].reduce((a, b) => `${a}<div id="${b.pureId}"></div>`, '')
+
+      this._injectStyle(this._makeStyleScoped(resStyle, kScopePrefix))
+      this._injectContent(this._makeContentScoped(resHtml, kScopePrefix))
+    }
+
+    _buildViewTemplate (id, res) {
+      return {
+        pureId: id,
+        id: addScopePrefix('#' + id, kScopePrefix),
+        template: this._makeContentScoped(`
+<div id="${id}" v-bind:class="{'@@hidden':!show}"
+    v-bind:style="{left:left+'px', top:top+'px'}">${res}
+</div>`, kScopePrefix)
+      }
+    }
+
+    _injectStyle (css) {
       let style = document.createElement('style')
       style.type = 'text/css'
       style.appendChild(document.createTextNode(css))
       document.documentElement.appendChild(style)
     }
 
-    injectContent (html) {
+    _injectContent (html) {
       let div = document.createElement('div')
       div.innerHTML = html
       document.documentElement.appendChild(div)
@@ -126,7 +167,7 @@
         .map(x => x + ' !important').join(';')
     }
 
-    makeStyleScoped (css, prefix) {
+    _makeStyleScoped (css, prefix) {
       function addPrefix (sel) {
         return sel.split(',').map(
           x => addScopePrefix(x, prefix)).join(',')
@@ -137,7 +178,7 @@
       })
     }
 
-    makeContentScoped (html, prefix) {
+    _makeContentScoped (html, prefix) {
       html = html.replace(/@@/g, prefix)
         .replace(/([^:](id|class)=)"([^"]+)"/g, `$1"${prefix}$3"`)
 
@@ -145,213 +186,20 @@
         return $1 + '"' + this.addImportant($2) + '"'
       })
     }
-
-    styleRes () {
-      return `
-.hidden {
-  opacity: .0;
-  pointer-events: none;
-}
-
-#lookupBtn {
-  display: inline-flex;
-  z-index: 2147483647;
-}
-
-#lookupBtn,
-#selectBoard,
-#wordMeaning {
-  position: absolute;
-}
-
-#selectBoard {
-  z-index: 2147483645;
-}
-
-#wordMeaning {
-  z-index: 2147483646;
-  min-width: 200px;
-  max-width: 300px;
-  background: rgba(16, 16, 16, 0.86);
-  border-radius: 3px;
-  transition: opacity 0.2s;
-}
-
-#wordMeaning a {
-  cursor: unset;
-  text-decoration: none;
-}
-
-#selectBoard p,
-#selectBoard a,
-#wordMeaning p,
-#wordMeaning a {
-  margin: 0;
-  padding: 0;
-  word-spacing: normal;
-  font-size: 13px;
-  font-family: consolas, 'Microsoft YaHei';
-  border: none;
-}
-
-#wordMeaning p,
-#wordMeaning a {
-  line-height: 18px;
-}
-
-#selectBoard a {
-  line-height: 15px;
-}
-
-#lookupLab,
-.wordSelectLeft {
-  font-size: 0;
-  line-height: 0;
-}
-
-#lookupLab {
-  cursor: pointer;
-  padding: 7px;
-  border-radius: 5px;
-  transition: background-color .15s ease-in-out, opacity 0.3s ease-in-out;
-  user-select: none;
-  background-color: #c8ced3;
-  border-color: #c8ced3;
-  opacity: 0.3;
-}
-
-#lookupLab:hover {
-  background-color: #b3bbc2;
-  border-color: #acb5bc;
-  opacity: 1;
-}
-
-#lookupLab:active {
-  background-color: #acb5bc;
-  border-color: #a5aeb7
-}
-
-.wordSelectGroup {
-  display: inline-flex;
-  flex-direction: row-reverse;
-  margin: 2px;
-}
-
-.wordSelectLeft {
-  background-color: #525252;
-  padding: 2px 4px 2px 5px;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-}
-
-.wordSelectRight {
-  width: 5px;
-  background-color: #d455a2;
-  padding: 2px 5px 2px 2px;
-  border-top-right-radius: 3px;
-  border-bottom-right-radius: 3px;
-  cursor: pointer;
-}
-
-.wordSelectRightGrayed {
-  background-color: #737373;
-}
-
-.wordSelectGroup a[word]:hover {
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.wordSelectRight:hover + span {
-  text-decoration: underline;
-}
-
-.wordSelectGroup a {
-  user-select: none;
-  color: #d6d6d6;
-  text-decoration: none;
-}`
-    }
-
-    fuck (html, id) {
-      return this.makeContentScoped(`<div id="${id}" ${this.argBindPos()}>${html}</div>`, kScopePrefix)
-    }
-
-    templateLookupBtn () {
-      const html = `
-<label id="lookupLab" @click="show = false; send();" style="display:block;">
-    <svg role="img" style="width:15px; height:15px;" viewBox="0 0 512 512">
-        <path fill="#23282c" d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208
-            0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9
-            0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128
-            128 0 70.7-57.2 128-128 128z">
-        </path>
-    </svg>
-</label>
-      `
-
-      return this.fuck(html, 'lookupBtn')
-    }
-
-    templateWordMeaning () {
-      const html = `
-<div style="margin:7px 10px;" comment="for the box-sizing issue">
-    <p style="margin-bottom:5px;">
-        <a style="color: #809bbd;">{{obj.word}} </a>
-        <a style="color: #a786a2;" v-if="obj.phonetic">[{{obj.phonetic}}]</a>
-    </p>
-    <div style="text-indent: -10px; padding-left: 10px;">
-        <p style="color: #96b38a;" v-for="item in obj.basicExplain">{{item}}</p>
-        <p style="color: #ddca7e;" v-for="item in obj.webExplain">{{item.en + ': ' + item.cn[0]}}</p>
-    </div>
-</div>
-`
-      return this.fuck(html, 'wordMeaning')
-    }
-
-    templateSelectBoard () {
-      const html = `
-<div style="margin:0 20px;" comment="for the box-sizing issue">
-    <span class="wordSelectGroup" v-for="item in obj">
-        <span class="wordSelectRight" @click="send($event, item)"
-            v-bind:class="{'@@wordSelectRightGrayed': item.data.length < 2}"></span>
-        <span class="wordSelectLeft">
-            <span v-for="(word, index) in item.data">
-                <a word @click="send($event, word)">{{word}}</a><a v-if="(item.separator !== '')
-                    && (index+1 < item.data.length)">{{item.separator}}</a>
-            </span>
-        </span>
-    </span>
-</div>
-`
-      return this.fuck(html, 'selectBoard')
-    }
-
-    argBindPos () {
-      return `v-bind:class="{'@@hidden':!show}" v-bind:style="{left:left+'px', top:top+'px'}"`
-    }
-
-    contentRes () {
-      return `
-<div id="lookupBtn"></div>
-<div id="wordMeaning"></div>
-<div id="selectBoard"></div>
-`
-    }
   }
 
   class PopupView {
-    constructor (param, eleId, template, onSend) {
+    constructor (param, res, onSend) {
       if (onSend === undefined) {
         onSend = () => {}
       }
 
       let that = this
       this.param = param
-      this.eleId = eleId
+      this.eleId = res.id
       this.view = new Vue({
-        el: eleId,
-        template: template,
+        el: res.id,
+        template: res.template,
         data: {
           show: false,
           obj: {},
@@ -443,22 +291,14 @@
   }
 
   class DictView {
-    constructor (prefix) {
+    constructor (resource) {
       this.param = {}
-      this.lookupBtnId = addScopePrefix('#lookupBtn', prefix)
-      this.wordMeaningId = addScopePrefix('#wordMeaning', prefix)
-      this.selectBoardId = addScopePrefix('#selectBoard', prefix)
       this.action = new LookupAction(this)
-
-      this.lookupBtn = new PopupView(this.param, this.lookupBtnId,
-        (new DictRes).templateLookupBtn(), () => {
-          this.action.lookup()
-        }
+      this.lookupBtn = new PopupView(this.param, resource.lookupBtn,
+        this.action.lookup.bind(this.action)
       )
-
-      this.wordMeaning = new PopupView(this.param, this.wordMeaningId, (new DictRes).templateWordMeaning())
-      this.selectBoard = new PopupView(this.param, this.selectBoardId,
-        (new DictRes).templateSelectBoard(),
+      this.wordMeaning = new PopupView(this.param, resource.wordMeaning)
+      this.selectBoard = new PopupView(this.param, resource.selectBoard,
         this.onSelectBoardSend.bind(this, this.action)
       )
     }
@@ -467,7 +307,7 @@
       let word = (typeof msg === 'string')
         ? msg : msg.data.join(msg.separator)
 
-      let board = document.querySelector(this.selectBoardId)
+      let board = document.querySelector(this.selectBoard.eleId)
       this.param.pos = {
         x: ev.clientX,
         y: board.offsetTop + board.offsetHeight - window.scrollY
@@ -619,18 +459,15 @@
     run () {
       this.anyWidgetClicked = false
       this.doubleClickChecker = new JustNowChecker()
-      this.injectHtml()
-      this.initView()
+      this.init()
+    }
+
+    async init () {
+      this.resource = new DictRes()
+      await this.resource.load()
+      this.view = new DictView(this.resource)
       this.connectAllFrames()
       this.registerEventHandler()
-    }
-
-    injectHtml () {
-      (new DictRes()).inject()
-    }
-
-    initView () {
-      this.view = new DictView(kScopePrefix)
     }
 
     connectAllFrames () {
@@ -721,15 +558,15 @@
 
     handleMouseDown (ev) {
       let that = this
-      function isClicked (id) {
-        let el = document.querySelector(id)
+      function isClicked (view) {
+        let el = document.querySelector(view.eleId)
         console.assert(el)
         return that.isSelfOrDescendant(el, ev.target)
       }
 
-      let clickedBtn = isClicked(this.view.lookupBtnId)
-      let clickedMean = isClicked(this.view.wordMeaningId)
-      let clickedBoard = isClicked(this.view.selectBoardId)
+      let clickedBtn = isClicked(this.view.lookupBtn)
+      let clickedMean = isClicked(this.view.wordMeaning)
+      let clickedBoard = isClicked(this.view.selectBoard)
       this.anyWidgetClicked = clickedBtn || clickedMean || clickedBoard
 
       if (!clickedBtn) {
@@ -766,14 +603,8 @@
     }
   }
 
-  (new DictApp()).run()
-  return
-
-  let type = document.contentType
-  if (/^text\//.test(type) ||
-    /^application\/(javascript|json)$/.test(type)) {
+  const type = document.contentType
+  if (type !== 'application/pdf') {
     (new DictApp()).run()
-  } else {
-    _log(`MIME: ${type}`);
   }
 })()
