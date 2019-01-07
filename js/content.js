@@ -1,7 +1,6 @@
 /* global chrome DOMParser XMLHttpRequest MouseEvent Vue */
 (() => {
   'use strict'
-  const kScopePrefix = 'mmJsOrg-'
   const kIsDebug = true
 
   function loadRes (path) {
@@ -115,6 +114,10 @@
   }
 
   class DictRes {
+    constructor () {
+      this.scopePrefix = 'mmJsOrg-'
+    }
+
     async load () {
       const resStyle = await loadRes('css/index.css')
       const resHtmlLookupBtn = await loadRes('html/lookup_btn.html')
@@ -134,18 +137,18 @@
         this.wordMeaning
       ].reduce((a, b) => `${a}<div id="${b.pureId}"></div>`, '')
 
-      this._injectStyle(this._makeStyleScoped(resStyle, kScopePrefix))
-      this._injectContent(this._makeContentScoped(resHtml, kScopePrefix))
+      this._injectStyle(this._makeStyleScoped(resStyle))
+      this._injectContent(this._makeContentScoped(resHtml))
     }
 
     _buildViewTemplate (id, res) {
       return {
         pureId: id,
-        id: addScopePrefix('#' + id, kScopePrefix),
+        id: addScopePrefix('#' + id, this.scopePrefix),
         template: this._makeContentScoped(`
 <div id="${id}" v-bind:class="{'@@hidden':!show}"
     v-bind:style="{left:left+'px', top:top+'px'}">${res}
-</div>`, kScopePrefix)
+</div>`)
       }
     }
 
@@ -167,18 +170,20 @@
         .map(x => x + ' !important').join(';')
     }
 
-    _makeStyleScoped (css, prefix) {
+    _makeStyleScoped (css) {
       function addPrefix (sel) {
         return sel.split(',').map(
           x => addScopePrefix(x, prefix)).join(',')
       }
 
+      const prefix = this.scopePrefix
       return css.replace(/([^{]+)\{([^}]+)\}/g, ($0, $1, $2) => {
         return addPrefix($1) + '{' + this.addImportant($2) + '\n}'
       })
     }
 
-    _makeContentScoped (html, prefix) {
+    _makeContentScoped (html) {
+      const prefix = this.scopePrefix
       html = html.replace(/@@/g, prefix)
         .replace(/([^:](id|class)=)"([^"]+)"/g, `$1"${prefix}$3"`)
 
