@@ -1,0 +1,10 @@
+<div style="margin:7px 10px;" comment="for the box-sizing issue">
+    <p style="margin-bottom:5px;">
+        <a style="color: #809bbd;">{{obj.word}} </a>
+        <a style="color: #a786a2;" v-if="obj.phonetic">[{{obj.phonetic}}]</a>
+    </p>
+    <div style="text-indent: -10px; padding-left: 10px;">
+        <p style="color: #96b38a;" v-for="item in obj.basicExplain">{{item}}</p>
+        <p style="color: #ddca7e;" v-for="item in obj.webExplain">{{item.en + ': ' + item.cn[0]}}</p>
+    </div>
+</div>

@@ -1,0 +1,123 @@
+.hidden {
+  opacity: .0;
+  pointer-events: none;
+}
+
+#lookupBtn {
+  display: inline-flex;
+  z-index: 2147483647;
+}
+
+#lookupBtn,
+#selectBoard,
+#wordMeaning {
+  position: absolute;
+}
+
+#selectBoard {
+  z-index: 2147483645;
+}
+
+#wordMeaning {
+  z-index: 2147483646;
+  min-width: 200px;
+  max-width: 300px;
+  background: rgba(16, 16, 16, 0.86);
+  border-radius: 3px;
+  transition: opacity 0.2s;
+}
+
+#wordMeaning a {
+  cursor: unset;
+  text-decoration: none;
+}
+
+#selectBoard p,
+#selectBoard a,
+#wordMeaning p,
+#wordMeaning a {
+  margin: 0;
+  padding: 0;
+  word-spacing: normal;
+  font-size: 13px;
+  font-family: consolas, 'Microsoft YaHei';
+  border: none;
+}
+
+#wordMeaning p,
+#wordMeaning a {
+  line-height: 18px;
+}
+
+#selectBoard a {
+  line-height: 15px;
+}
+
+#lookupLab,
+.wordSelectLeft {
+  font-size: 0;
+  line-height: 0;
+}
+
+#lookupLab {
+  cursor: pointer;
+  padding: 7px;
+  border-radius: 5px;
+  transition: background-color .15s ease-in-out, opacity 0.3s ease-in-out;
+  user-select: none;
+  background-color: #c8ced3;
+  border-color: #c8ced3;
+  opacity: 0.3;
+}
+
+#lookupLab:hover {
+  background-color: #b3bbc2;
+  border-color: #acb5bc;
+  opacity: 1;
+}
+
+#lookupLab:active {
+  background-color: #acb5bc;
+  border-color: #a5aeb7
+}
+
+.wordSelectGroup {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  margin: 2px;
+}
+
+.wordSelectLeft {
+  background-color: #525252;
+  padding: 2px 4px 2px 5px;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.wordSelectRight {
+  width: 5px;
+  background-color: #d455a2;
+  padding: 2px 5px 2px 2px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+  cursor: pointer;
+}
+
+.wordSelectRightGrayed {
+  background-color: #737373;
+}
+
+.wordSelectGroup a[word]:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wordSelectRight:hover + span {
+  text-decoration: underline;
+}
+
+.wordSelectGroup a {
+  user-select: none;
+  color: #d6d6d6;
+  text-decoration: none;
+}
