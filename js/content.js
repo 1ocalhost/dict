@@ -59,10 +59,9 @@
     }
 
     _buildViewTemplate (id, res) {
-      const that = this
       return {
         pureId: id,
-        id: that.addScopePrefix('#' + id),
+        id: this.addScopePrefix('#' + id),
         template: this._makeContentScoped(`
 <div id="${id}" v-bind:class="{'@@hidden':!show}"
     v-bind:style="{left:left+'px', top:top+'px'}">${res}
@@ -167,12 +166,13 @@
       }
     }
 
-    _updateWidgetPos () {
+    _updateWidgetPos (pos) {
       const kMargin = 5
       const kGiveWayToPointer = 2
+      const clickPos = pos || this.param.pos
 
-      let left = this.param.pos.x + kGiveWayToPointer
-      let top = this.param.pos.y + kGiveWayToPointer
+      let left = clickPos.x + kGiveWayToPointer
+      let top = clickPos.y + kGiveWayToPointer
       let widget = this._widgetSize()
       let viewPort = this._viewPortSize()
 
@@ -204,8 +204,8 @@
       this.view.obj = data
     }
 
-    show () {
-      this._updateWidgetPos()
+    show (pos) {
+      this._updateWidgetPos(pos)
       this.view.show = true
     }
 
@@ -359,7 +359,6 @@
 
   class DictApp {
     run () {
-      this.anyWidgetClicked = false
       this.doubleClickChecker = new JustNowChecker()
       this.init()
     }
@@ -408,7 +407,7 @@
       })
 
       document.addEventListener('mouseup', (ev) => {
-        // for <h1>, selection will be lost after mouse up
+        // for <h1>, selection will be cleared after mouse up
         setTimeout(() => {
           this.handleMouseUp(ev)
         }, 200)
@@ -432,10 +431,36 @@
         return
       }
 
-      if (this.anyWidgetClicked) {
+      const clicked = this.curClickedView(ev)
+      if (clicked.lookupBtn || clicked.selectBoard) {
         return
       }
 
+      this.onMouseUp(ev, clicked)
+    }
+
+    curClickedView (ev) {
+      const isClicked = this.isClickedView.bind(this, ev)
+      const lookupBtn = isClicked(this.view.lookupBtn)
+      const wordMeaning = isClicked(this.view.wordMeaning)
+      const selectBoard = isClicked(this.view.selectBoard)
+      const anyOne = (lookupBtn || wordMeaning || selectBoard)
+
+      return {
+        lookupBtn: lookupBtn,
+        wordMeaning: wordMeaning,
+        selectBoard: selectBoard,
+        anyOne: anyOne
+      }
+    }
+
+    isClickedView (ev, view) {
+      let el = document.querySelector(view.eleId)
+      console.assert(el)
+      return util.isSelfOrDescendant(el, ev.target)
+    }
+
+    onMouseUp (ev, clicked) {
       let selection = document.getSelection().toString()
       if (!selection) {
         return
@@ -450,58 +475,37 @@
         return
       }
 
-      this.view.param.pos = {
+      const curPos = {
         x: ev.clientX,
         y: ev.clientY
       }
 
-      this.view.lookupBtn.show()
+      if (clicked.wordMeaning) {
+        window.getSelection().empty()
+      } else {
+        this.view.param.pos = curPos
+      }
+
+      this.view.lookupBtn.show(curPos)
     }
 
     handleMouseDown (ev) {
-      let that = this
-      function isClicked (view) {
-        let el = document.querySelector(view.eleId)
-        console.assert(el)
-        return that.isSelfOrDescendant(el, ev.target)
-      }
-
-      let clickedBtn = isClicked(this.view.lookupBtn)
-      let clickedMean = isClicked(this.view.wordMeaning)
-      let clickedBoard = isClicked(this.view.selectBoard)
-      this.anyWidgetClicked = clickedBtn || clickedMean || clickedBoard
-
-      if (!clickedBtn) {
+      const clicked = this.curClickedView(ev)
+      if (!clicked.lookupBtn) {
         this.view.lookupBtn.hide()
       }
 
-      if (!clickedMean) {
+      if (!clicked.wordMeaning) {
         this.view.wordMeaning.hide()
       }
 
-      if (!clickedBoard && !clickedMean) {
+      if (!clicked.selectBoard && !clicked.wordMeaning) {
         this.view.selectBoard.hide()
       }
 
-      if (!this.anyWidgetClicked) {
+      if (!clicked.anyOne) {
         this.notifyOthers()
       }
-    }
-
-    isSelfOrDescendant (parent, child) {
-      if (parent === child) {
-        return true
-      }
-
-      let node = child.parentNode
-      while (node !== null) {
-        if (node === parent) {
-          return true
-        }
-        node = node.parentNode
-      }
-
-      return false
     }
   }
 

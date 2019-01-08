@@ -2,21 +2,6 @@
 ((global) => {
   'use strict'
 
-  function isXmlDoc (type) {
-    return [
-      'application/xml',
-      'application/rss+xml',
-      'application/atom+xml'
-    ].some(x => x === type)
-  }
-
-  if (isXmlDoc(document.contentType)) {
-    document.createElement = function (tagName) {
-      const ns = 'http://www.w3.org/1999/xhtml'
-      return document.createElementNS(ns, tagName)
-    }
-  }
-
   class Util {
     constructor (obj) {
       this.param = obj
@@ -54,7 +39,39 @@
         }
       }
     }
+
+    isSelfOrDescendant (parent, child) {
+      if (parent === child) {
+        return true
+      }
+
+      let node = child.parentNode
+      while (node !== null) {
+        if (node === parent) {
+          return true
+        }
+        node = node.parentNode
+      }
+
+      return false
+    }
+
+    isXmlDoc (type) {
+      return [
+        'application/xml',
+        'application/rss+xml',
+        'application/atom+xml'
+      ].some(x => x === type)
+    }
   }
 
-  global.mmJsOrgUtil = new Util({ debug: true })
+  const util = new Util({ debug: true })
+  global.mmJsOrgUtil = util
+
+  if (util.isXmlDoc(document.contentType)) {
+    document.createElement = function (tagName) {
+      const ns = 'http://www.w3.org/1999/xhtml'
+      return document.createElementNS(ns, tagName)
+    }
+  }
 })(this)
