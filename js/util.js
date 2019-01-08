@@ -1,4 +1,4 @@
-/* global XMLHttpRequest */
+/* global chrome XMLHttpRequest */
 ((global) => {
   'use strict'
 
@@ -21,6 +21,7 @@
     constructor (obj) {
       this.param = obj
       this.module = {}
+      this.shared = {}
     }
 
     log (x) {
@@ -29,7 +30,11 @@
       }
     }
 
-    sendRequest (url, hook) {
+    fetchRes (path) {
+      return this.fetch(chrome.runtime.getURL(path))
+    }
+
+    fetch (url, hook) {
       return new Promise(function (resolve, reject) {
         var xhttp = new XMLHttpRequest()
         xhttp.onreadystatechange = onEnd.bind(xhttp, ...arguments)

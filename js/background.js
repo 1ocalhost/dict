@@ -25,19 +25,24 @@
   }
 
   async function lookup (tab, sel) {
-    const word = sel.selectionText.trim().replace('\'', '\\\'')
+    const word = sel.selectionText.trim()
     const openTab = openNewTab.bind(null, word)
     const run = execute.bind(null, tab)
 
     try {
       const docType = await run({ code: 'document.contentType' })
-      if (docType[0] !== 'application/pdf') {
+      if (docType !== 'application/pdf') {
         openTab()
         return
       }
 
-      await run({ code: `window.mmJsOrgWordToLookUp = '${word}'` })
-      run({ file: 'js/fallback.js' })
+      const noFallback = await run({ code: 'mmJsOrgUtil.shared.fallback === undefined' })
+      if (noFallback) {
+        await run({ file: 'js/fallback.js' })
+      }
+
+      const safeWord = word.replace('\'', '\\\'')
+      await run({ code: `mmJsOrgUtil.shared.fallback.lookup('${safeWord}')` })
     } catch (e) {
       openTab()
     }
@@ -46,11 +51,11 @@
   function execute (tab, code) {
     function callback (resolve, reject, result) {
       if (result === undefined) {
-        reject(result)
+        reject()
         return
       }
 
-      resolve(result)
+      resolve(result[0])
     }
 
     return new Promise(function (resolve, reject) {

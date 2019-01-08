@@ -1,0 +1,9 @@
+<div id="$rootId" v-bind:style="{'max-height': maxHeight + 'px'}" style="position:fixed; bottom:0; width:100%;
+    background:#181818de; transition:max-height 1s; overflow:hidden;">
+    <div style="display:flex; flex-wrap:wrap; justify-content:center;
+        padding:5px; color:white; font-family:consolas,'Microsoft YaHei';">
+            <a style="margin:0 15px" v-for="item in obj">{{item}}</a>
+        <span @click="maxHeight = 0" style="border-radius:3px; background:#9c144c; cursor:pointer;
+            padding:0 8px; font-weight:bold;">X</span>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-/* global mmJsOrgUtil chrome MouseEvent Vue */
+/* global mmJsOrgUtil MouseEvent Vue */
 (() => {
   'use strict'
 
@@ -30,15 +30,11 @@
       this.scopePrefix = 'mmJsOrg-'
     }
 
-    loadRes (path) {
-      return util.sendRequest(chrome.runtime.getURL(path))
-    }
-
     async load () {
-      const resStyle = await this.loadRes('css/index.css')
-      const resLookupBtn = await this.loadRes('html/lookup_btn.html')
-      const resSelectBoard = await this.loadRes('html/select_board.html')
-      const resWordMeaning = await this.loadRes('html/word_meaning.html')
+      const resStyle = await util.fetchRes('css/index.css')
+      const resLookupBtn = await util.fetchRes('html/lookup_btn.html')
+      const resSelectBoard = await util.fetchRes('html/select_board.html')
+      const resWordMeaning = await util.fetchRes('html/word_meaning.html')
 
       this.lookupBtn = this._buildViewTemplate('lookupBtn', resLookupBtn)
       this.selectBoard = this._buildViewTemplate('selectBoard', resSelectBoard)

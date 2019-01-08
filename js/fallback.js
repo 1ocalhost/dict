@@ -1,34 +1,50 @@
+/* global mmJsOrgUtil Vue */
 (() => {
   'use strict'
 
-  const kMsgId = 'mmJsOrg-message'
-  const kHtmlRes = `
-<div id="${kMsgId}" style="position:fixed; bottom:0; width:100%; background:#181818de;
-  text-align:center; transition:max-height 1s; overflow:hidden; max-height:0;">
-  <div style="padding:5px; color:white; font-family:consolas,'Microsoft YaHei';">
-    <a></a>
-    <span style="border-radius:3px; background:#9c144c; cursor:pointer; padding:0 8px; font-weight:bold;">X</span>
-  </div>
-</div>`.replace(/\n/g, ' ')
+  const util = mmJsOrgUtil
 
-  function injectHtml () {
-    let div = document.createElement('div')
-    div.innerHTML = kHtmlRes
-    document.body.appendChild(div)
-  }
+  class Fallback {
+    constructor () {
+      this.rootId = 'mmJsOrg-message'
+      this.youdao = util.module.youdao()
+      this._init()
+    }
 
-  function init () {
-    document.querySelector(`#${kMsgId} span`).onclick = () => {
-      document.querySelector(`#${kMsgId}`).style.maxHeight = 0
+    async _init () {
+      const res = await util.fetchRes('html/fallback.html')
+      this._injectHtml(res)
+      this.view = new Vue({
+        el: `#${this.rootId}`,
+        data: {
+          obj: [],
+          maxHeight: 0
+        }
+      })
+    }
+
+    _injectHtml (template) {
+      let div = document.createElement('div')
+      div.innerHTML = template.replace('$rootId', this.rootId)
+      document.body.appendChild(div)
+    }
+
+    _show (text) {
+      this.view.obj = text
+      this.view.maxHeight = 500
+    }
+
+    async lookup (word) {
+      if (word.length > 66) {
+        this._show(['Selection is too long :( '])
+        return
+      }
+
+      const data = await this.youdao.lookup(word)
+      this._show([`${data.word} [${data.phonetic}]`]
+        .concat(data.basicExplain))
     }
   }
 
-  if (!document.querySelector(`#${kMsgId}`)) {
-    injectHtml()
-    init()
-  }
-
-  const word = window.mmJsOrgWordToLookUp || ':('
-  document.querySelector(`#${kMsgId} a`).textContent = word
-  document.querySelector(`#${kMsgId}`).style.maxHeight = 500
+  util.shared.fallback = new Fallback()
 })()
