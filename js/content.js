@@ -1,28 +1,9 @@
-/* global chrome DOMParser XMLHttpRequest MouseEvent Vue */
+/* global mmJsOrgUtil mmJsOrgYoudaoDictFactory chrome MouseEvent Vue */
 (() => {
   'use strict'
-  const kIsDebug = true
 
-  function loadRes (path) {
-    return new Promise(function (resolve, reject) {
-      var xhttp = new XMLHttpRequest()
-      xhttp.onreadystatechange = onEnd.bind(xhttp, ...arguments)
-      xhttp.open('GET', chrome.runtime.getURL(path), true)
-      xhttp.send()
-    })
-
-    function onEnd (yes, no) {
-      if (this.readyState === 4) {
-        this.status === 200 ? yes(this.responseText) : no()
-      }
-    }
-  }
-
-  function _log (x) {
-    if (kIsDebug) {
-      console.log(x)
-    }
-  }
+  const util = mmJsOrgUtil
+  const _log = util.log.bind(util) // TODO
 
   class JustNowChecker {
     constructor () {
@@ -45,84 +26,24 @@
     }
   }
 
-  class YoudaoXmlParser {
-    constructor (xml) {
-      this.root = (new DOMParser())
-        .parseFromString(xml, 'application/xml')
-    }
-
-    parse () {
-      let result = {
-        word: this.parseWord(),
-        phonetic: this.parsePhonetic(),
-        basicExplain: this.parseBasicExplain(),
-        webExplain: this.parseWebExplain()
-      }
-
-      if (!result.basicExplain.length &&
-        !result.webExplain.length) {
-        return {
-          word: 'Unknown word',
-          phonetic: null,
-          basicExplain: [],
-          webExplain: null
-        }
-      }
-
-      return result
-    }
-
-    fromCData (el) {
-      return el.innerHTML.trim().replace(/^<!\[CDATA\[|\]\]>$/g, '')
-    }
-
-    parseWord () {
-      return this.fromCData(this.root.getElementsByTagName('return-phrase')[0])
-    }
-
-    parsePhonetic () {
-      let elPhonetic = this.root.getElementsByTagName('phonetic-symbol')
-      if (elPhonetic.length) {
-        return elPhonetic[0].innerHTML
-      }
-
-      return null
-    }
-
-    parseBasicExplain () {
-      let elCustomTrans = this.root.getElementsByTagName('custom-translation')
-      if (elCustomTrans.length) {
-        return [...elCustomTrans[0].getElementsByTagName('content')]
-          .map(x => this.fromCData(x))
-      }
-
-      return []
-    }
-
-    parseWebExplain () {
-      return [...this.root.getElementsByTagName('web-translation')].map(x => {
-        return {
-          en: this.fromCData(x.getElementsByTagName('key')[0]),
-          cn: [...x.getElementsByTagName('value')].map(y => this.fromCData(y))
-        }
-      })
-    }
-  }
-
   class DictRes {
     constructor () {
       this.scopePrefix = 'mmJsOrg-'
     }
 
-    async load () {
-      const resStyle = await loadRes('css/index.css')
-      const resHtmlLookupBtn = await loadRes('html/lookup_btn.html')
-      const resHtmlSelectBoard = await loadRes('html/select_board.html')
-      const resHtmlWordMeaning = await loadRes('html/word_meaning.html')
+    loadRes (path) {
+      return util.sendRequest(chrome.runtime.getURL(path))
+    }
 
-      this.lookupBtn = this._buildViewTemplate('lookupBtn', resHtmlLookupBtn)
-      this.selectBoard = this._buildViewTemplate('selectBoard', resHtmlSelectBoard)
-      this.wordMeaning = this._buildViewTemplate('wordMeaning', resHtmlWordMeaning)
+    async load () {
+      const resStyle = await this.loadRes('css/index.css')
+      const resLookupBtn = await this.loadRes('html/lookup_btn.html')
+      const resSelectBoard = await this.loadRes('html/select_board.html')
+      const resWordMeaning = await this.loadRes('html/word_meaning.html')
+
+      this.lookupBtn = this._buildViewTemplate('lookupBtn', resLookupBtn)
+      this.selectBoard = this._buildViewTemplate('selectBoard', resSelectBoard)
+      this.wordMeaning = this._buildViewTemplate('wordMeaning', resWordMeaning)
       this._inject(resStyle)
     }
 
@@ -334,8 +255,8 @@
 
   class LookupAction {
     constructor (view) {
+      this.youdao = mmJsOrgYoudaoDictFactory()
       this.view = view
-      this.meaningCache = {}
       this.wordToLookup = ''
       this.wordGroupToLookup = []
     }
@@ -435,31 +356,9 @@
       return true
     }
 
-    lookupSpecifiedWord (word) {
-      if (this.meaningCache.hasOwnProperty(word)) {
-        _log('Cache hit: ' + word)
-        this.view.wordMeaning.update(this.meaningCache[word])
-        return
-      }
-
-      let url = 'https://dict.youdao.com/fsearch?xmlVersion=3.2&q=' +
-          encodeURI(word.toLocaleLowerCase())
-      _log(`query: ${url}`)
-
-      let tryParseData = (response) => {
-        let data = (new YoudaoXmlParser(response)).parse()
-        this.meaningCache[word] = data
-        this.view.wordMeaning.update(data)
-      }
-
-      let xhttp = new XMLHttpRequest()
-      xhttp.onreadystatechange = function () {
-        if (this.readyState === 4 && this.status === 200) {
-          tryParseData(this.responseText)
-        }
-      }
-      xhttp.open('GET', url, true)
-      xhttp.send()
+    async lookupSpecifiedWord (word) {
+      const data = await this.youdao.lookup(word)
+      this.view.wordMeaning.update(data)
     }
   }
 

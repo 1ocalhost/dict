@@ -36,8 +36,7 @@
         return
       }
 
-      const statement = `window.mmJsOrgWordToLookUp = '${word}'`
-      await run({ code: statement })
+      await run({ code: `window.mmJsOrgWordToLookUp = '${word}'` })
       run({ file: 'js/fallback.js' })
     } catch (e) {
       openTab()

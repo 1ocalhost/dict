@@ -12,7 +12,8 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "js/first.js",
+        "js/util.js",
+        "js/youdao.js",
         "js/third_party/vue_d.js",
         "js/content.js"
       ],
