@@ -12,10 +12,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
-        "js/util.js",
-        "js/youdao.js",
-        "js/third_party/vue_d.js",
-        "js/content.js"
+        "js/util.js"
       ],
       "all_frames": true,
       "match_about_blank": true,

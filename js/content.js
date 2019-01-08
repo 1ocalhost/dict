@@ -509,8 +509,5 @@
     }
   }
 
-  const type = document.contentType
-  if (type !== 'application/pdf') {
-    (new DictApp()).run()
-  }
+  (new DictApp()).run()
 })()

@@ -36,13 +36,8 @@
         return
       }
 
-      const noFallback = await run({ code: 'mmJsOrgUtil.shared.fallback === undefined' })
-      if (noFallback) {
-        await run({ file: 'js/fallback.js' })
-      }
-
       const safeWord = word.replace('\'', '\\\'')
-      await run({ code: `mmJsOrgUtil.shared.fallback.lookup('${safeWord}')` })
+      await run({ code: `mmJsOrgUtil.fallbackLookup('${safeWord}')` })
     } catch (e) {
       openTab()
     }
