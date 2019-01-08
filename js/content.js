@@ -1,9 +1,8 @@
-/* global mmJsOrgUtil mmJsOrgYoudaoDictFactory chrome MouseEvent Vue */
+/* global mmJsOrgUtil chrome MouseEvent Vue */
 (() => {
   'use strict'
 
   const util = mmJsOrgUtil
-  const _log = util.log.bind(util) // TODO
 
   class JustNowChecker {
     constructor () {
@@ -255,7 +254,7 @@
 
   class LookupAction {
     constructor (view) {
-      this.youdao = mmJsOrgYoudaoDictFactory()
+      this.youdao = util.module.youdao()
       this.view = view
       this.wordToLookup = ''
       this.wordGroupToLookup = []
@@ -340,7 +339,7 @@
     }
 
     filterSelectedText (text) {
-      _log(`selected text: ${text}`)
+      util.log(`selected text: ${text}`)
       let textGroup = this.spiltWords(text)
       if (!textGroup.length) {
         return false
@@ -451,7 +450,7 @@
       }
 
       if (!this.view.action.prepareToLookup()) {
-        _log('not english word')
+        util.log('not english word')
         return
       }
 

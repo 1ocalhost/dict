@@ -20,6 +20,7 @@
   class Util {
     constructor (obj) {
       this.param = obj
+      this.module = {}
     }
 
     log (x) {

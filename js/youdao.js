@@ -1,5 +1,5 @@
 /* global mmJsOrgUtil DOMParser */
-((global) => {
+(() => {
   'use strict'
 
   const util = mmJsOrgUtil
@@ -91,7 +91,5 @@
     }
   }
 
-  global.mmJsOrgYoudaoDictFactory = () => {
-    return new YoudaoDict()
-  }
-})(this)
+  util.module.youdao = () => new YoudaoDict()
+})()
