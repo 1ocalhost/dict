@@ -42,6 +42,8 @@
   font-size: 13px;
   font-family: consolas, 'Microsoft YaHei';
   border: none;
+  background: unset;
+  background-color: unset;
 }
 
 #wordMeaning p,
