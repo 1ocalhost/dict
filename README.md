@@ -5,4 +5,4 @@
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/users/flopjfeengphlbghlnmfhcjbadnhbmel.svg?label=Chrome%20users)](https://chrome.google.com/webstore/detail/flopjfeengphlbghlnmfhcjbadnhbmel)
 
 A simple Chrome extension to explain English words.
-(watch [video](https://youtu.be/t7mxJJv0SIE)?)
+(watch [video](https://youtu.be/TnIRvMC2qdc)?)
