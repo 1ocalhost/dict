@@ -83,7 +83,7 @@
           encodeURI(word.toLocaleLowerCase())
       util.log(`query: ${url}`)
 
-      return util.fetch(url, x => {
+      return util.fetchUrl(url, x => {
         const data = (new YoudaoXmlParser(x)).parse()
         this.meaningCache[word] = data
         return data

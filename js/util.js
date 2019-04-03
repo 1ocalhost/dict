@@ -1,4 +1,4 @@
-/* global chrome XMLHttpRequest */
+/* global chrome */
 ((global) => {
   'use strict'
 
@@ -47,27 +47,25 @@
     }
 
     fetchRes (path) {
-      return this.fetch(chrome.runtime.getURL(path))
+      return this.fetchUrl(chrome.runtime.getURL(path))
     }
 
-    fetch (url, hook) {
+    fetchUrl (url, hook) {
       return new Promise(function (resolve, reject) {
-        var xhttp = new XMLHttpRequest()
-        xhttp.onreadystatechange = onEnd.bind(xhttp, ...arguments)
-        xhttp.open('GET', url, true)
-        xhttp.send()
+        chrome.runtime.sendMessage({
+          contentScriptQuery: 'fetchUrl',
+          url: url
+        },
+        onEnd.bind(null, ...arguments))
       })
 
-      function onEnd (yes, no) {
-        if (this.readyState === 4) {
-          if (this.status === 200) {
-            const text = this.responseText
-            yes(hook !== undefined ? hook(text) : text)
-            return
-          }
-
+      function onEnd (yes, no, text) {
+        if (text === null) {
           no()
+          return
         }
+
+        yes(hook !== undefined ? hook(text) : text)
       }
     }
 

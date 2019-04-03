@@ -1,4 +1,4 @@
-/* global chrome */
+/* global chrome fetch */
 (() => {
   'use strict'
 
@@ -58,4 +58,16 @@
         callback.bind(null, ...arguments))
     })
   }
+
+  chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+      if (request.contentScriptQuery === 'fetchUrl') {
+        fetch(request.url)
+          .then(response => response.text())
+          .then(text => sendResponse(text))
+          // eslint-disable-next-line handle-callback-err
+          .catch(error => sendResponse(null))
+        return true
+      }
+    })
 })()
