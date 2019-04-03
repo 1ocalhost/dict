@@ -5,9 +5,13 @@
   class Util {
     constructor (obj) {
       this.dependencyLoaded = {}
-      this.param = obj
+      this.param = { debug: this.isDevMode() }
       this.module = {}
       this.shared = {}
+    }
+
+    isDevMode () {
+      return !('update_url' in chrome.runtime.getManifest())
     }
 
     log (x) {
@@ -88,7 +92,7 @@
     }
   }
 
-  const util = new Util({ debug: true })
+  const util = new Util()
   global.mmJsOrgUtil = util
 
   const blackList = [
