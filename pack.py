@@ -8,11 +8,11 @@ import datetime
 
 '''
 Supported rules:
-R: match in root only
-A: match all by name
+R -> match in root only
+A -> match anyone by name
 
 R: [/][path/]folder[*]/[*]
-R: [/][path/]file[*]
+R: [/|path/]file[*]
 A: file[*]
 '''
 
