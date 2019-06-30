@@ -1,6 +1,5 @@
-node_modules/
-
-.eslintrc.js
-pack.zip
-package.json
-package-lock.json
+/node_modules/
+/.eslintrc.js
+/pack.zip
+/package.json
+/package-lock.json

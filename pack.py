@@ -191,10 +191,6 @@ def main():
         print('aborted')
         return
 
-    print('OK---------')
-    return
-
-
     exclude = ExcludeFile()
     exclude.load_rules('.gitignore')
     exclude.load_rules('.pkgignore')

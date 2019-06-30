@@ -1,0 +1,6 @@
+/.git/
+/.gitignore
+/.pkgignore
+/README.md
+/store_assets/
+*_d.js
