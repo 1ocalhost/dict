@@ -1,5 +1,6 @@
 /node_modules/
 /.eslintrc.js
 /pack.zip
+/pack_cr_ext.py
 /package.json
 /package-lock.json
