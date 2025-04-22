@@ -1,7 +1,7 @@
 <div style="margin:0 20px;font-size:0;" comment="for the box-sizing issue">
     <span class="wordSelectGroup" v-for="item in obj">
         <span class="wordSelectRight" @click="send($event, item)"
-            v-bind:class="{'@@wordSelectRightGrayed': item.data.length < 2}"></span>
+            v-bind:class="{'wordSelectRightGrayed': item.data.length < 2}"></span>
         <span class="wordSelectLeft">
             <span v-for="(word, index) in item.data">
                 <a word @click="send($event, word)">{{word}}</a><a v-if="(item.separator !== '')

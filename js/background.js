@@ -2,10 +2,12 @@
 (() => {
   'use strict'
 
-  chrome.contextMenus.create({
-    id: 'lookupWord',
-    title: 'Lookup "%s"',
-    contexts: ['selection']
+  chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+      id: 'lookupWord',
+      title: 'Lookup "%s"',
+      contexts: ['selection']
+    })
   })
 
   chrome.contextMenus.onClicked.addListener(sel => {
@@ -21,7 +23,7 @@
 
   function openNewTab (word) {
     const url = 'http://youdao.com/w/eng/' + word
-    chrome.tabs.create({ url: url })
+    chrome.tabs.create({ url })
   }
 
   async function lookup (tab, sel) {
@@ -30,31 +32,35 @@
     const run = execute.bind(null, tab)
 
     try {
-      const docType = await run({ code: 'document.contentType' })
+      const docType = await run(() => document.contentType)
       if (docType !== 'application/pdf') {
         openTab()
         return
       }
 
-      const safeWord = word.replace('\'', '\\\'')
-      await run({ code: `mmJsOrgUtil.fallbackLookup('${safeWord}')` })
+      await run((w) => window.util.fallbackLookup(w), [word])
     } catch (e) {
       openTab()
     }
   }
 
-  function execute (tab, code) {
+  function execute (tab, func, args) {
     function callback (resolve, reject, result) {
       if (result === undefined) {
         reject()
         return
       }
 
-      resolve(result[0])
+      resolve(result[0].result)
     }
 
     return new Promise(function (resolve, reject) {
-      chrome.tabs.executeScript(tab.id, code,
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tab.id },
+          func,
+          args
+        },
         callback.bind(null, ...arguments))
     })
   }
@@ -65,8 +71,7 @@
         fetch(request.url)
           .then(response => response.text())
           .then(text => sendResponse(text))
-          // eslint-disable-next-line handle-callback-err
-          .catch(error => sendResponse(null))
+          .catch(_error => sendResponse(null))
         return true
       }
     })

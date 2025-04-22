@@ -1,8 +1,6 @@
-/* global mmJsOrgUtil DOMParser */
-(() => {
+/* global DOMParser */
+(global => {
   'use strict'
-
-  const util = mmJsOrgUtil
 
   class YoudaoXmlParser {
     constructor (xml) {
@@ -11,7 +9,7 @@
     }
 
     parse () {
-      let result = {
+      const result = {
         word: this.parseWord(),
         phonetic: this.parsePhonetic(),
         basicExplain: this.parseBasicExplain(),
@@ -40,7 +38,7 @@
     }
 
     parsePhonetic () {
-      let elPhonetic = this.root.getElementsByTagName('phonetic-symbol')
+      const elPhonetic = this.root.getElementsByTagName('phonetic-symbol')
       if (elPhonetic.length) {
         return elPhonetic[0].innerHTML
       }
@@ -49,7 +47,7 @@
     }
 
     parseBasicExplain () {
-      let elCustomTrans = this.root.getElementsByTagName('custom-translation')
+      const elCustomTrans = this.root.getElementsByTagName('custom-translation')
       if (elCustomTrans.length) {
         return [...elCustomTrans[0].getElementsByTagName('content')]
           .map(x => this.fromCData(x))
@@ -74,16 +72,16 @@
     }
 
     async lookup (word) {
-      if (this.meaningCache.hasOwnProperty(word)) {
-        util.log('Cache hit: ' + word)
+      if (Object.hasOwn(this.meaningCache, word)) {
+        global.util.log('Cache hit: ' + word)
         return this.meaningCache[word]
       }
 
-      let url = 'https://dict.youdao.com/fsearch?xmlVersion=3.2&q=' +
+      const url = 'https://dict.youdao.com/fsearch?xmlVersion=3.2&q=' +
           encodeURI(word.toLocaleLowerCase())
-      util.log(`query: ${url}`)
+      global.util.log(`query: ${url}`)
 
-      return util.fetchUrl(url, x => {
+      return global.util.fetchUrl(url, x => {
         const data = (new YoudaoXmlParser(x)).parse()
         this.meaningCache[word] = data
         return data
@@ -91,5 +89,5 @@
     }
   }
 
-  util.module.youdao = () => new YoudaoDict()
-})()
+  global.util.module.youdao = () => new YoudaoDict()
+})(window)

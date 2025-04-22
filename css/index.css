@@ -3,22 +3,22 @@
   pointer-events: none;
 }
 
-#lookupBtn {
+.lookupBtn {
   display: inline-flex;
   z-index: 2147483647;
 }
 
-#lookupBtn,
-#selectBoard,
-#wordMeaning {
+.lookupBtn,
+.selectBoard,
+.wordMeaning {
   position: absolute;
 }
 
-#selectBoard {
+.selectBoard {
   z-index: 2147483645;
 }
 
-#wordMeaning {
+.wordMeaning {
   z-index: 2147483646;
   min-width: 200px;
   max-width: 300px;
@@ -27,15 +27,15 @@
   transition: opacity 0.2s;
 }
 
-#wordMeaning a {
+.wordMeaning a {
   cursor: unset;
   text-decoration: none;
 }
 
-#selectBoard p,
-#selectBoard a,
-#wordMeaning p,
-#wordMeaning a {
+.selectBoard p,
+.selectBoard a,
+.wordMeaning p,
+.wordMeaning a {
   margin: 0;
   padding: 0;
   word-spacing: normal;
@@ -46,22 +46,22 @@
   background-color: unset;
 }
 
-#wordMeaning p,
-#wordMeaning a {
+.wordMeaning p,
+.wordMeaning a {
   line-height: 18px;
 }
 
-#selectBoard a {
+.selectBoard a {
   line-height: 15px;
 }
 
-#lookupLab,
+.lookupLab,
 .wordSelectLeft {
   font-size: 0;
   line-height: 0;
 }
 
-#lookupLab {
+.lookupLab {
   cursor: pointer;
   padding: 7px;
   border-radius: 5px;
@@ -72,13 +72,13 @@
   opacity: 0.3;
 }
 
-#lookupLab:hover {
+.lookupLab:hover {
   background-color: #b3bbc2;
   border-color: #acb5bc;
   opacity: 1;
 }
 
-#lookupLab:active {
+.lookupLab:active {
   background-color: #acb5bc;
   border-color: #a5aeb7
 }

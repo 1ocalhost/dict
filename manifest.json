@@ -1,21 +1,33 @@
 {
   "name": "划词翻译",
-  "version": "1.19.0908.0",
+  "version": "1.25.0418.0",
   "description": "虽则如云，匪我思存。",
   "icons": {
-      "48": "icon/book_48.png",
-      "128": "icon/book_128.png"
+    "48": "icon/book_48.png",
+    "128": "icon/book_128.png"
   },
-  "manifest_version": 2,
-  "web_accessible_resources": ["*"],
+  "manifest_version": 3,
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": [
-        "js/util.js"
+      "matches": [
+        "<all_urls>"
       ],
-      "css": [
-        "css/override.css"
+      "js": [
+        "js/puny-vue.js",
+        "js/util.js",
+        "js/youdao.js",
+        "js/fallback.js",
+        "js/content.js"
       ],
       "all_frames": true,
       "match_about_blank": true,
@@ -23,12 +35,13 @@
     }
   ],
   "background": {
-    "scripts": ["js/background.js"],
-    "persistent": true
+    "service_worker": "js/background.js"
   },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "permissions": [
-    "<all_urls>",
-    "contextMenus"
+    "contextMenus",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ]
 }

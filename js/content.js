@@ -1,8 +1,10 @@
-/* global mmJsOrgUtil MouseEvent Vue */
-(() => {
+/* global MouseEvent Vue */
+(global => {
   'use strict'
 
-  const util = mmJsOrgUtil
+  if (!this.runApp) {
+    return
+  }
 
   class JustNowChecker {
     constructor () {
@@ -11,7 +13,7 @@
     }
 
     isJustNow (state) {
-      let now = (new Date()).getTime()
+      const now = (new Date()).getTime()
       if (this.lastState === state) {
         if (now - this.lastTime < 1000) {
           this.lastTime = now
@@ -26,88 +28,42 @@
   }
 
   class DictRes {
-    constructor () {
-      this.scopePrefix = 'mmJsOrg-'
-    }
-
     async load () {
-      const resStyle = await util.fetchRes('css/index.css')
-      const resLookupBtn = await util.fetchRes('html/lookup_btn.html')
-      const resSelectBoard = await util.fetchRes('html/select_board.html')
-      const resWordMeaning = await util.fetchRes('html/word_meaning.html')
+      this._injectRoot()
+      await this._injectStyle()
 
-      this.lookupBtn = this._buildViewTemplate('lookupBtn', resLookupBtn)
-      this.selectBoard = this._buildViewTemplate('selectBoard', resSelectBoard)
-      this.wordMeaning = this._buildViewTemplate('wordMeaning', resWordMeaning)
-      this._inject(resStyle)
+      this.lookupBtn = await this._buildView('lookupBtn', 'lookup_btn')
+      this.selectBoard = await this._buildView('selectBoard', 'select_board')
+      this.wordMeaning = await this._buildView('wordMeaning', 'word_meaning')
     }
 
-    _inject (resStyle) {
-      const resHtml = [
-        this.lookupBtn,
-        this.selectBoard,
-        this.wordMeaning
-      ].reduce((a, b) => `${a}<div id="${b.pureId}"></div>`, '')
-
-      this._injectStyle(this._makeStyleScoped(resStyle))
-      this._injectContent(this._makeContentScoped(resHtml))
-    }
-
-    addScopePrefix (sel) {
-      const prefix = this.scopePrefix
-      return sel.replace(/([.#])([^.#]+)/g, `$1${prefix}$2`)
-    }
-
-    _buildViewTemplate (id, res) {
-      return {
-        pureId: id,
-        id: this.addScopePrefix('#' + id),
-        template: this._makeContentScoped(`
-<div id="${id}" v-bind:class="{'@@hidden':!show}"
-    v-bind:style="{left:left+'px', top:top+'px'}">${res}
-</div>`)
-      }
-    }
-
-    _injectStyle (css) {
-      let style = document.createElement('style')
-      style.type = 'text/css'
-      style.appendChild(document.createTextNode(css))
-      document.documentElement.appendChild(style)
-    }
-
-    _injectContent (html) {
-      let div = document.createElement('div')
-      div.innerHTML = html
+    _injectRoot () {
+      const div = document.createElement('div')
+      div.style.position = 'static'
       document.documentElement.appendChild(div)
+      this.root = div.attachShadow({ mode: 'open' })
     }
 
-    addImportant (prop) {
-      return prop.split(';').filter(x => x.match(/:/))
-        .map(x => x + ' !important').join(';')
+    async _injectStyle () {
+      const content = await global.util.fetchRes('css/index.css')
+      const style = document.createElement('style')
+      style.appendChild(document.createTextNode(content))
+      this.root.appendChild(style)
     }
 
-    _makeStyleScoped (css) {
-      const that = this
-      function addPrefix (sel) {
-        return sel.split(',').map(
-          that.addScopePrefix.bind(that)
-        ).join(',')
-      }
-
-      return css.replace(/([^{]+)\{([^}]+)\}/g, ($0, $1, $2) => {
-        return addPrefix($1) + '{' + this.addImportant($2) + '\n}'
-      })
-    }
-
-    _makeContentScoped (html) {
-      const prefix = this.scopePrefix
-      html = html.replace(/@@/g, prefix)
-        .replace(/([^:](id|class)=)"([^"]+)"/g, `$1"${prefix}$3"`)
-
-      return html.replace(/([^:]style=)"([^"]+)"/g, ($0, $1, $2) => {
-        return $1 + '"' + this.addImportant($2) + '"'
-      })
+    async _buildView (cls, file) {
+      const url = `html/${file}.html`
+      const html = await global.util.fetchRes(url)
+      const template = `
+        <div class="${cls}"
+          @mouseup="mouseup($event)"
+          @mousedown="mousedown($event)"
+          v-bind:class="{'hidden':!show}"
+          v-bind:style="{left:left+'px', top:top+'px'}">${html}
+        </div>`
+      const el = document.createElement('div')
+      this.root.appendChild(el)
+      return { name: cls, el, template }
     }
   }
 
@@ -117,11 +73,11 @@
         onSend = () => {}
       }
 
-      let that = this
+      const that = this
       this.param = param
-      this.eleId = res.id
       this.view = new Vue({
-        el: res.id,
+        name: res.name,
+        el: res.el,
         template: res.template,
         data: {
           show: false,
@@ -131,14 +87,16 @@
           $delayedUpdate: false
         },
         methods: {
-          send: onSend
+          send: onSend,
+          mouseup (ev) { that.mouseup = ev },
+          mousedown (ev) { that.mouseup = ev }
         },
         updated: that._viewOnUpdated()
       })
     }
 
     _viewOnUpdated () {
-      let that = this
+      const that = this
       return function () {
         if (this.$data.$delayedUpdate) {
           this.$data.$delayedUpdate = false
@@ -148,8 +106,9 @@
     }
 
     _viewPortSize () {
-      let ele = (document.compatMode === 'BackCompat'
-        ? 'body' : 'documentElement')
+      const ele = (document.compatMode === 'BackCompat'
+        ? 'body'
+        : 'documentElement')
 
       return {
         width: document[ele].clientWidth,
@@ -159,7 +118,7 @@
 
     _widgetSize () {
       const kDecimalCompensator = 1
-      let el = document.querySelector(this.eleId)
+      const el = this.view.$el
       return {
         width: el.offsetWidth + kDecimalCompensator,
         height: el.offsetHeight + kDecimalCompensator
@@ -173,8 +132,8 @@
 
       let left = clickPos.x + kGiveWayToPointer
       let top = clickPos.y + kGiveWayToPointer
-      let widget = this._widgetSize()
-      let viewPort = this._viewPortSize()
+      const widget = this._widgetSize()
+      const viewPort = this._viewPortSize()
 
       let overflow = left + widget.width - viewPort.width
       if (overflow > 0) {
@@ -228,10 +187,11 @@
     }
 
     onSelectBoardSend (action, ev, msg) {
-      let word = (typeof msg === 'string')
-        ? msg : msg.data.join(msg.separator)
+      const word = (typeof msg === 'string')
+        ? msg
+        : msg.data.join(msg.separator)
 
-      let board = document.querySelector(this.selectBoard.eleId)
+      const board = this.selectBoard.view.$el
       this.param.pos = {
         x: ev.clientX,
         y: board.offsetTop + board.offsetHeight - window.scrollY
@@ -250,7 +210,7 @@
 
   class LookupAction {
     constructor (view) {
-      this.youdao = util.module.youdao()
+      this.youdao = global.util.module.youdao()
       this.view = view
       this.wordToLookup = ''
       this.wordGroupToLookup = []
@@ -264,7 +224,7 @@
       this.wordToLookup = ''
       this.wordGroupToLookup = []
 
-      let selectedText = this.validSelectedText()
+      const selectedText = this.validSelectedText()
       if (!selectedText) {
         return false
       }
@@ -300,7 +260,7 @@
       }
 
       return sel.split(/[^a-z-]/i).filter(x => x).map((x) => {
-        let o = extract(x)
+        const o = extract(x)
         o.data = o.data.split(o.separator).filter(x => x.length > 1)
         if (o.separator === kSign) {
           o.separator = ''
@@ -315,7 +275,7 @@
       }
 
       let isAllSingle = true
-      let phrase = []
+      const phrase = []
 
       group.forEach(x => {
         phrase.push(x.data[0])
@@ -335,8 +295,8 @@
     }
 
     filterSelectedText (text) {
-      util.log(`selected text: ${text}`)
-      let textGroup = this.spiltWords(text)
+      global.util.log(`selected text: ${text}`)
+      const textGroup = this.spiltWords(text)
       if (!textGroup.length) {
         return false
       }
@@ -372,8 +332,8 @@
     }
 
     connectAllFrames () {
-      let that = this
-      let curFrameUid = Math.random()
+      const that = this
+      const curFrameUid = Math.random()
       const eventType = 'mm.js.org/dict'
 
       function dispatchMessage (data) {
@@ -383,7 +343,7 @@
       }
 
       window.addEventListener('message', function (e) {
-        let d = e.data
+        const d = e.data
         if (d.type === eventType) {
           if (d.from !== curFrameUid) {
             that.view.hideAllWidget()
@@ -440,28 +400,25 @@
     }
 
     curClickedView (ev) {
-      const isClicked = this.isClickedView.bind(this, ev)
+      function isClicked (view) {
+        return ev === view.mousedown || ev === view.mouseup
+      }
+
       const lookupBtn = isClicked(this.view.lookupBtn)
       const wordMeaning = isClicked(this.view.wordMeaning)
       const selectBoard = isClicked(this.view.selectBoard)
       const anyOne = (lookupBtn || wordMeaning || selectBoard)
 
       return {
-        lookupBtn: lookupBtn,
-        wordMeaning: wordMeaning,
-        selectBoard: selectBoard,
-        anyOne: anyOne
+        lookupBtn,
+        wordMeaning,
+        selectBoard,
+        anyOne
       }
     }
 
-    isClickedView (ev, view) {
-      let el = document.querySelector(view.eleId)
-      console.assert(el)
-      return util.isSelfOrDescendant(el, ev.target)
-    }
-
     onMouseUp (ev, clicked) {
-      let selection = document.getSelection().toString()
+      const selection = document.getSelection().toString()
       if (!selection) {
         return
       }
@@ -471,7 +428,7 @@
       }
 
       if (!this.view.action.prepareToLookup()) {
-        util.log('not english word')
+        global.util.log('not english word')
         return
       }
 
@@ -480,12 +437,7 @@
         y: ev.clientY
       }
 
-      if (clicked.wordMeaning) {
-        window.getSelection().empty()
-      } else {
-        this.view.param.pos = curPos
-      }
-
+      this.view.param.pos = curPos
       this.view.lookupBtn.show(curPos)
     }
 
@@ -510,4 +462,4 @@
   }
 
   (new DictApp()).run()
-})()
+})(window)

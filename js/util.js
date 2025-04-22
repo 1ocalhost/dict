@@ -4,10 +4,9 @@
 
   class Util {
     constructor (obj) {
-      this.dependencyLoaded = {}
       this.param = { debug: this.isDevMode() }
       this.module = {}
-      this.shared = {}
+      this.runApp = false
     }
 
     isDevMode () {
@@ -21,29 +20,7 @@
     }
 
     async fallbackLookup (word) {
-      await this.tryLoadDependency('js/fallback.js')
-      this.shared.fallback.lookup(word)
-    }
-
-    async tryLoadDependency (jsFile) {
-      if (this.dependencyLoaded.hasOwnProperty(jsFile)) {
-        return
-      }
-
-      await this.dynamicImport('js/youdao.js')
-      await this.dynamicImport('js/third_party/vue??.js')
-      await this.dynamicImport(jsFile)
-      this.dependencyLoaded[jsFile] = true
-    }
-
-    async dynamicImport (path) {
-      path = path.replace('??', this.param.debug ? '_d' : '')
-      const code = await this.fetchRes(path);
-      (function () {
-        // eslint-disable-next-line no-eval
-        eval(code)
-      // eslint-disable-next-line no-extra-bind
-      }).bind(global)()
+      this.module.fallback.lookup(word)
     }
 
     fetchRes (path) {
@@ -54,7 +31,7 @@
       return new Promise(function (resolve, reject) {
         chrome.runtime.sendMessage({
           contentScriptQuery: 'fetchUrl',
-          url: url
+          url
         },
         onEnd.bind(null, ...arguments))
       })
@@ -69,29 +46,13 @@
       }
     }
 
-    isSelfOrDescendant (parent, child) {
-      if (parent === child) {
-        return true
-      }
-
-      let node = child.parentNode
-      while (node !== null) {
-        if (node === parent) {
-          return true
-        }
-        node = node.parentNode
-      }
-
-      return false
-    }
-
     arrayHas (array, item) {
       return array.some(x => x === item)
     }
   }
 
   const util = new Util()
-  global.mmJsOrgUtil = util
+  global.util = util
 
   const blackList = [
     'application/pdf',
@@ -111,5 +72,5 @@
     }
   }
 
-  util.tryLoadDependency('js/content.js')
+  this.runApp = true
 })(this)

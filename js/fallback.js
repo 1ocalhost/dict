@@ -1,21 +1,18 @@
-/* global mmJsOrgUtil Vue */
-(() => {
+/* global Vue */
+(global => {
   'use strict'
-
-  const util = mmJsOrgUtil
 
   class Fallback {
     constructor () {
-      this.rootId = 'mmJsOrg-message'
-      this.youdao = util.module.youdao()
-      this._init()
+      this.youdao = global.util.module.youdao()
+      this.inited = false
     }
 
     async _init () {
-      const res = await util.fetchRes('html/fallback.html')
-      this._injectHtml(res)
+      const res = await global.util.fetchRes('html/fallback.html')
+      const el = this._injectHtml(res)
       this.view = new Vue({
-        el: `#${this.rootId}`,
+        el,
         data: {
           obj: [],
           maxHeight: 0
@@ -24,9 +21,14 @@
     }
 
     _injectHtml (template) {
-      let div = document.createElement('div')
-      div.innerHTML = template.replace('$rootId', this.rootId)
-      document.body.appendChild(div)
+      const host = document.createElement('div')
+      document.documentElement.appendChild(host)
+      const root = host.attachShadow({ mode: 'open' })
+
+      const el = document.createElement('div')
+      el.innerHTML = template
+      root.appendChild(el)
+      return el
     }
 
     _show (text) {
@@ -35,6 +37,11 @@
     }
 
     async lookup (word) {
+      if (!this.inited) {
+        await this._init()
+        this.inited = true
+      }
+
       if (word.length > 66) {
         this._show(['Selection is too long :( '])
         return
@@ -46,5 +53,5 @@
     }
   }
 
-  util.shared.fallback = new Fallback()
-})()
+  global.util.module.fallback = new Fallback()
+})(window)
