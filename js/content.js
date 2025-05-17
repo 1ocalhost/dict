@@ -42,6 +42,7 @@
       div.style.position = 'static'
       document.documentElement.appendChild(div)
       this.root = div.attachShadow({ mode: 'open' })
+      this.container = div
     }
 
     async _injectStyle () {
@@ -88,8 +89,9 @@
         },
         methods: {
           send: onSend,
+          // the following are used by isClicked()
           mouseup (ev) { that.mouseup = ev },
-          mousedown (ev) { that.mouseup = ev }
+          mousedown (ev) { that.mousedown = ev }
         },
         updated: that._viewOnUpdated()
       })
@@ -143,6 +145,10 @@
       overflow = top + widget.height - viewPort.height
       if (overflow > 0) {
         top = top - overflow - kMargin
+      }
+
+      if (top < 0) {
+        top = 0
       }
 
       this._setViewPos(
@@ -326,6 +332,7 @@
     async init () {
       this.resource = new DictRes()
       await this.resource.load()
+      this.container = this.resource.container
       this.view = new DictView(this.resource)
       this.connectAllFrames()
       this.registerEventHandler()
@@ -337,7 +344,7 @@
       const eventType = 'mm.js.org/dict'
 
       function dispatchMessage (data) {
-        document.querySelectorAll('iframe').forEach((x) => {
+        document.querySelectorAll('iframe').forEach(x => {
           x.contentWindow.postMessage(data, '*')
         })
       }
@@ -362,18 +369,24 @@
     }
 
     registerEventHandler () {
-      document.addEventListener('keyup', (ev) => {
+      document.addEventListener('keyup', ev => {
         this.view.lookupBtn.hide()
-      })
+      }, true)
 
-      document.addEventListener('mouseup', (ev) => {
+      document.addEventListener('mouseup', ev => {
         // for <h1>, selection will be cleared after mouse up
         setTimeout(() => {
           this.handleMouseUp(ev)
         }, 200)
-      })
+      }, true)
 
       document.addEventListener('mousedown',
+        this.handleMouseDown.bind(this), true)
+
+      this.resource.root.addEventListener('mouseup',
+        this.handleMouseUp.bind(this))
+
+      this.resource.root.addEventListener('mousedown',
         this.handleMouseDown.bind(this))
     }
 
@@ -386,12 +399,16 @@
         return
       }
 
-      const kMoustLeftBtn = 1
-      if (ev.which !== kMoustLeftBtn) {
+      const mainButton = 0
+      if (ev.button !== mainButton) {
         return
       }
 
       const clicked = this.curClickedView(ev)
+      if (clicked.ignored) {
+        return
+      }
+
       if (clicked.lookupBtn || clicked.selectBoard) {
         return
       }
@@ -400,8 +417,23 @@
     }
 
     curClickedView (ev) {
+      const bubblingPhase = 3
+      const fromBubbling = (ev.eventPhase === bubblingPhase)
+
+      if (!fromBubbling && this.container.contains(ev.target)) {
+        // During the capture phase, the event object only provides the shadow
+        // container node, not the precise target element. In such cases, the
+        // event is ignored, allowing the listener on the shadow root node to
+        // handle it via bubbling.
+        return { ignored: true }
+      }
+
       function isClicked (view) {
-        return ev === view.mousedown || ev === view.mouseup
+        if (!fromBubbling) {
+          return false
+        }
+
+        return ev === view[ev.type]
       }
 
       const lookupBtn = isClicked(this.view.lookupBtn)
@@ -443,6 +475,10 @@
 
     handleMouseDown (ev) {
       const clicked = this.curClickedView(ev)
+      if (clicked.ignored) {
+        return
+      }
+
       if (!clicked.lookupBtn) {
         this.view.lookupBtn.hide()
       }
