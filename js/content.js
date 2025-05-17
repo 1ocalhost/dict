@@ -40,9 +40,23 @@
     _injectRoot () {
       const div = document.createElement('div')
       div.style.position = 'static'
-      document.documentElement.appendChild(div)
       this.root = div.attachShadow({ mode: 'open' })
       this.container = div
+
+      function checkExists(times) {
+        if (times <= 0) {
+          return
+        }
+
+        const host = document.documentElement
+        if (!Array.from(host.children).includes(div)) {
+          host.appendChild(div)
+        }
+
+        setTimeout(() => checkExists(times - 1), 1000)
+      }
+
+      checkExists(5)
     }
 
     async _injectStyle () {
