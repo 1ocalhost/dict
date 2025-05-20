@@ -53,23 +53,9 @@
 
     _injectRoot () {
       const [rootNode, hostNode] = this._createRootHostNode()
-      this.hostRoot = hostNode.attachShadow({ mode: 'open' })
+      this.rootNode = rootNode
       this.hostNode = hostNode
-
-      function checkExists(times) {
-        if (times <= 0) {
-          return
-        }
-
-        const host = document.documentElement
-        if (!Array.from(host.children).includes(rootNode)) {
-          host.appendChild(rootNode)
-        }
-
-        setTimeout(() => checkExists(times - 1), 1000)
-      }
-
-      checkExists(5)
+      this.hostRoot = hostNode.attachShadow({ mode: 'open' })
     }
 
     async _injectStyle () {
@@ -92,6 +78,19 @@
       const el = document.createElement('div')
       this.hostRoot.appendChild(el)
       return { name: cls, el, template }
+    }
+
+    ensureInjected () {
+      const rootNode = this.rootNode
+      if (!rootNode) {
+        return
+      }
+
+      const host = document.documentElement
+      if (!Array.from(host.children).includes(rootNode)) {
+        global.util.log('injecting root node...')
+        host.appendChild(rootNode)
+      }
     }
   }
 
@@ -491,6 +490,8 @@
         global.util.log('not english word')
         return
       }
+
+      this.resource.ensureInjected()
 
       const curPos = {
         x: ev.clientX,
