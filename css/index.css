@@ -1,3 +1,12 @@
+a, p {
+  font-size: 13px;
+  font-family: consolas, 'Microsoft YaHei';
+}
+
+p {
+  margin: 0;
+}
+
 .hidden {
   opacity: .0;
   pointer-events: none;
@@ -27,25 +36,6 @@
   transition: opacity 0.2s;
 }
 
-.wordMeaning a {
-  cursor: unset;
-  text-decoration: none;
-}
-
-.selectBoard p,
-.selectBoard a,
-.wordMeaning p,
-.wordMeaning a {
-  margin: 0;
-  padding: 0;
-  word-spacing: normal;
-  font-size: 13px;
-  font-family: consolas, 'Microsoft YaHei';
-  border: none;
-  background: unset;
-  background-color: unset;
-}
-
 .wordMeaning p,
 .wordMeaning a {
   line-height: 18px;
@@ -55,12 +45,6 @@
   line-height: 15px;
 }
 
-.lookupLab,
-.wordSelectLeft {
-  font-size: 0;
-  line-height: 0;
-}
-
 .lookupLab {
   cursor: pointer;
   padding: 7px;
@@ -68,8 +52,8 @@
   transition: background-color .15s ease-in-out, opacity 0.3s ease-in-out;
   user-select: none;
   background-color: #c8ced3;
-  border-color: #c8ced3;
   opacity: 0.3;
+  line-height: 0;
 }
 
 .lookupLab:hover {
@@ -114,12 +98,11 @@
   cursor: pointer;
 }
 
-.wordSelectRight:hover + span {
+.wordSelectRight:hover + span a {
   text-decoration: underline;
 }
 
 .wordSelectGroup a {
   user-select: none;
   color: #d6d6d6;
-  text-decoration: none;
 }

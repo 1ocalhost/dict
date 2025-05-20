@@ -37,11 +37,24 @@
       this.wordMeaning = await this._buildView('wordMeaning', 'word_meaning')
     }
 
+    _createRootHostNode () {
+      const root = document.createElement('div')
+
+      // Absolute positioning relies on the nearest non-static
+      // ancestor as its reference point.
+      root.style.position = 'static'
+
+      // To prevent inheritance of properties, and the initial
+      // position value is static.
+      root.innerHTML = '<div style="all: initial;"></div>'
+
+      return [root, root.firstChild]
+    }
+
     _injectRoot () {
-      const div = document.createElement('div')
-      div.style.position = 'static'
-      this.root = div.attachShadow({ mode: 'open' })
-      this.container = div
+      const [rootNode, hostNode] = this._createRootHostNode()
+      this.hostRoot = hostNode.attachShadow({ mode: 'open' })
+      this.hostNode = hostNode
 
       function checkExists(times) {
         if (times <= 0) {
@@ -49,8 +62,8 @@
         }
 
         const host = document.documentElement
-        if (!Array.from(host.children).includes(div)) {
-          host.appendChild(div)
+        if (!Array.from(host.children).includes(rootNode)) {
+          host.appendChild(rootNode)
         }
 
         setTimeout(() => checkExists(times - 1), 1000)
@@ -63,7 +76,7 @@
       const content = await global.util.fetchRes('css/index.css')
       const style = document.createElement('style')
       style.appendChild(document.createTextNode(content))
-      this.root.appendChild(style)
+      this.hostRoot.appendChild(style)
     }
 
     async _buildView (cls, file) {
@@ -77,7 +90,7 @@
           v-bind:style="{left:left+'px', top:top+'px'}">${html}
         </div>`
       const el = document.createElement('div')
-      this.root.appendChild(el)
+      this.hostRoot.appendChild(el)
       return { name: cls, el, template }
     }
   }
@@ -346,7 +359,6 @@
     async init () {
       this.resource = new DictRes()
       await this.resource.load()
-      this.container = this.resource.container
       this.view = new DictView(this.resource)
       this.connectAllFrames()
       this.registerEventHandler()
@@ -397,10 +409,11 @@
       document.addEventListener('mousedown',
         this.handleMouseDown.bind(this), true)
 
-      this.resource.root.addEventListener('mouseup',
+      const hostRoot = this.resource.hostRoot
+      hostRoot.addEventListener('mouseup',
         this.handleMouseUp.bind(this))
 
-      this.resource.root.addEventListener('mousedown',
+      hostRoot.addEventListener('mousedown',
         this.handleMouseDown.bind(this))
     }
 
@@ -434,7 +447,8 @@
       const bubblingPhase = 3
       const fromBubbling = (ev.eventPhase === bubblingPhase)
 
-      if (!fromBubbling && this.container.contains(ev.target)) {
+      const hostNode = this.resource.hostNode
+      if (!fromBubbling && hostNode.contains(ev.target)) {
         // During the capture phase, the event object only provides the shadow
         // container node, not the precise target element. In such cases, the
         // event is ignored, allowing the listener on the shadow root node to
